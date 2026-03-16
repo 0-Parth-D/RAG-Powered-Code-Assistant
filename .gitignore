@@ -1,0 +1,33 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Environment
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data
+chroma_db/
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# C++ build artifacts
+*.o
+*.out
+*.exe
