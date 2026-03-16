@@ -22,8 +22,16 @@ std::vector<std::string> tokenize(std::string s) {
     return result;
 }
 
+// Inside your C++ code
+size_t count_tokens(const std::string& text) {
+    // Assuming tokenize() is your existing function that returns std::vector<std::string>
+    std::vector<std::string> tokens = tokenize(text);
+    return tokens.size();
+}
+
 /* pybind11 bindings */
 PYBIND11_MODULE(fast_tokenizer, m) {
     m.doc() = "Fast C++ tokenizer plugin for RAG Code Assistant"; 
     m.def("tokenize", &tokenize, "A function that splits a string by whitespace and lowercases it");
+    m.def("count_tokens", &count_tokens, "Returns the number of tokens in the text");
 }

@@ -1,12 +1,18 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from langchain_community.document_loaders import UnstructuredHTMLLoader, UnstructuredMarkdownLoader, TextLoader, BSHTMLLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_pinecone import PineconeVectorStore
 from pathlib import Path
 import fast_tokenizer
 
 base_dir = Path("./docs")
 paths = list(base_dir.rglob("*"))
+
 
 def load_docs(paths):
     all_docs = []
@@ -43,9 +49,16 @@ def load_docs(paths):
     
     return all_docs
 
+
+# Temporary Python fallback for local Windows ingestion
 def custom_token_length(text):
-    tokens = fast_tokenizer.tokenize(text)
-    return len(tokens)
+    # Ensure text is clean UTF-8
+    clean_text = text.encode('utf-8', 'ignore').decode('utf-8')
+    
+    # A standard rule of thumb for English text is that 1 token is roughly 4 characters.
+    # This avoids needing the C++ fast_tokenizer on Windows!
+    return len(clean_text) // 4
+
 
 def split_docs(docs):
     splitter = RecursiveCharacterTextSplitter(
@@ -55,18 +68,28 @@ def split_docs(docs):
     )
     return splitter.split_documents(docs)
 
+
 def store_docs(texts):
+    print("Embedding documents and uploading to Pinecone... (This may take a minute)")
+    
     model = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-    vectorstore = Chroma.from_documents(
+    
+    vectorstore = PineconeVectorStore.from_documents(
         documents=texts,
         embedding=model,
-        persist_directory="chroma_db",
-        collection_name="rag_code_assistant"
+        index_name="rag-agent",
+        pinecone_api_key=os.environ["PINECONE_API_KEY"],
     )
     return vectorstore
 
-docs = load_docs(paths)
-texts = split_docs(docs)
-vectorstore = store_docs(texts)
 
-print("Documents Loaded: ", len(docs))
+if __name__ == "__main__":
+    docs = load_docs(paths)
+    texts = split_docs(docs)
+    vectorstore = store_docs(texts)
+
+    print("="*50)
+    print("✅ SUCCESS!")
+    print(f"Documents Loaded: {len(docs)}")
+    print(f"Total Chunks Uploaded to Pinecone: {len(texts)}")
+    print("="*50)

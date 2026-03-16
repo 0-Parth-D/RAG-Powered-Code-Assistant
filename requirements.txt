@@ -6,3 +6,11 @@ langchain-ollama
 langchain-text-splitters
 langchain-chroma
 sentence-transformers
+python-dotenv
+
+fastapi
+uvicorn
+python-multipart
+pinecone-client
+langchain-pinecone
+pypdf
