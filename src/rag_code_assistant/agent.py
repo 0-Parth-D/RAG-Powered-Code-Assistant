@@ -3,7 +3,9 @@ import uvicorn
 from dotenv import load_dotenv
 
 load_dotenv()
-from fastapi import FastAPI, UploadFile, File
+
+from fastapi.security import APIKeyHeader
+from fastapi import FastAPI, UploadFile, File, Security, HTTPException, status, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -78,6 +80,20 @@ def load_agent(tools, llm):
 
 app = FastAPI(title="Python RAG Agent API")
 
+# 1. Define the name of the header we expect
+api_key_header = APIKeyHeader(name="X-API-Key")
+
+# 2. Get your secret password from environment variables
+SECRET_APP_KEY = os.environ["APP_API_KEY"]
+
+# 3. Create the security function
+def verify_api_key(api_key: str = Security(api_key_header)):
+    if api_key != SECRET_APP_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or missing API Key"
+        )
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], 
@@ -101,7 +117,7 @@ class ChatRequest(BaseModel):
     message: str
     history: list[dict] = []  # Allows UI to send previous messages
 
-@app.post("/chat")
+@app.post("/chat", dependencies=[Depends(verify_api_key)])
 async def chat_endpoint(request: ChatRequest):
     # 1. Build the chat history array from the UI's request
     chat_history = []
@@ -134,7 +150,7 @@ def custom_token_length(text):
     tokens = fast_tokenizer.tokenize(text)
     return len(tokens)
 
-@app.post("/upload")
+@app.post("/upload", dependencies=[Depends(verify_api_key)])
 async def upload_document(file: UploadFile = File(...)):
     """Accepts PDF, HTML, MD, and TXT files and uploads them to Pinecone using fast_tokenizer."""
     
