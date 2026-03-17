@@ -34,14 +34,10 @@ def load_vectorstore():
     )
 
 def load_llm():
-    """
-    Loads the LLM with fallback logic:
-    - Tries Ollama (local development with your laptop)
-    - Falls back to Groq Cloud (production deployment on Hugging Face)
-    """
-    ollama_url = os.environ["OLLAMA_BASE_URL"]
+    # 1. Use .get() so it doesn't crash if the variable is missing
+    ollama_url = os.environ.get("OLLAMA_BASE_URL")
     
-    # If OLLAMA_BASE_URL is set, use local Ollama (for demo purposes)
+    # 2. If the URL exists (like on your laptop), use Ollama
     if ollama_url:
         print("🔧 Using local Ollama LLM (Development Mode)")
         return ChatOllama(
@@ -50,18 +46,18 @@ def load_llm():
             base_url=ollama_url,
         )
     
-    # Otherwise, use Groq Cloud (for production on Hugging Face)
-    groq_api_key = os.environ["GROQ_API_KEY"]
+    # 3. If it doesn't exist (like on Hugging Face), fall back to Groq
+    groq_api_key = os.environ.get("GROQ_API_KEY")
     if not groq_api_key:
         raise ValueError(
             "Neither OLLAMA_BASE_URL nor GROQ_API_KEY found! "
             "Please set one in your environment variables."
         )
     
-    print("☁️  Using Groq Cloud LLM (Production Mode)")
+    print("☁️ Using Groq Cloud LLM (Production Mode)")
     return ChatGroq(
         api_key=groq_api_key,
-        model_name="llama-3.3-70b-versatile",  # Fast, smart, and free!
+        model_name="llama-3.3-70b-versatile",
         temperature=0.1
     )
 
