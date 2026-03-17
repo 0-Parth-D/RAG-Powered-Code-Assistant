@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 from langchain_pinecone import PineconeVectorStore # Changed from Chroma
 from langchain_ollama import ChatOllama
+from langchain_groq import ChatGroq
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.tools.retriever import create_retriever_tool
 from langchain.agents import create_agent
@@ -33,10 +34,35 @@ def load_vectorstore():
     )
 
 def load_llm():
-    return ChatOllama(
-        model="llama3.1",
-        temperature=0.1,
-        base_url=os.environ["OLLAMA_BASE_URL"],
+    """
+    Loads the LLM with fallback logic:
+    - Tries Ollama (local development with your laptop)
+    - Falls back to Groq Cloud (production deployment on Hugging Face)
+    """
+    ollama_url = os.environ["OLLAMA_BASE_URL"]
+    
+    # If OLLAMA_BASE_URL is set, use local Ollama (for demo purposes)
+    if ollama_url:
+        print("🔧 Using local Ollama LLM (Development Mode)")
+        return ChatOllama(
+            model="llama3.1",
+            temperature=0.1,
+            base_url=ollama_url,
+        )
+    
+    # Otherwise, use Groq Cloud (for production on Hugging Face)
+    groq_api_key = os.environ["GROQ_API_KEY"]
+    if not groq_api_key:
+        raise ValueError(
+            "Neither OLLAMA_BASE_URL nor GROQ_API_KEY found! "
+            "Please set one in your environment variables."
+        )
+    
+    print("☁️  Using Groq Cloud LLM (Production Mode)")
+    return ChatGroq(
+        api_key=groq_api_key,
+        model_name="llama-3.3-70b-versatile",  # Fast, smart, and free!
+        temperature=0.1
     )
 
 def load_retriever(vectorstore):

@@ -7,6 +7,7 @@ langchain-text-splitters
 langchain-chroma
 sentence-transformers
 python-dotenv
+langchain-groq
 
 fastapi
 uvicorn
